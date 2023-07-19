@@ -1,0 +1,209 @@
+---
+title: "EDA Report on BellaBeat Fitness Trackers"
+output: html_notebook
+---
+
+
+```{r}
+## LOADING THE LIBRARIES
+
+library(tidyverse)
+library(lubridate)
+```
+
+```{r}
+daily_activity <- read.csv("D:\\Clg_Projects\\Google Capstone_BellaBeat\\Fitabase Data 4.12.16-5.12.16\\dailyActivity_merged.csv")
+sleep_day <- read.csv("D:\\Clg_Projects\\Google Capstone_BellaBeat\\Fitabase Data 4.12.16-5.12.16\\sleepDay_merged.csv")
+weight_log <- read.csv("D:\\Clg_Projects\\Google Capstone_BellaBeat\\Fitabase Data 4.12.16-5.12.16\\weightLogInfo_merged.csv")
+heart_rate <- read.csv("D:\\Clg_Projects\\Google Capstone_BellaBeat\\Fitabase Data 4.12.16-5.12.16\\heartrate_seconds_merged.csv")
+hourly_steps <- read.csv("D:\\Clg_Projects\\Google Capstone_BellaBeat\\Fitabase Data 4.12.16-5.12.16\\hourlySteps_merged.csv")
+hourly_calories <- read.csv("D:\\Clg_Projects\\Google Capstone_BellaBeat\\Fitabase Data 4.12.16-5.12.16\\hourlyCalories_merged.csv")
+hourly_intensities <- read.csv("D:\\Clg_Projects\\Google Capstone_BellaBeat\\Fitabase Data 4.12.16-5.12.16\\hourlyIntensities_merged.csv")
+```
+
+```{r}
+## INFORMATION ABOUT DAILY_ACTIVITY
+head(daily_activity)
+
+glimpse(daily_activity)
+```
+
+```{r}
+## CHANGING THE DATA TYPE OF daily_activity
+
+daily_activity$ActivityDate=as.POSIXct(daily_activity$ActivityDate, format="%m/%d/%Y", tz=Sys.timezone())
+daily_activity$date <- format(daily_activity$ActivityDate, format = "%m/%d/%y")
+
+
+```
+
+```{r}
+## INFORMATION ABOUT sleep_day
+
+head(sleep_day)
+
+glimpse(sleep_day)
+```
+```{r}
+## CHANGING THE DATA TYPE OF sleep_day
+
+sleep_day$SleepDay=as.POSIXct(sleep_day$SleepDay, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
+sleep_day$date <- format(sleep_day$SleepDay, format = "%m/%d/%y")
+
+```
+
+
+```{r}
+##INFORMATION ABOUT weight_log
+
+head(weight_log)
+
+glimpse(weight_log)
+```
+```{r}
+## CHANGING THE DATA TYPE OF weight_log
+
+weight_log$Date=as.POSIXct(weight_log$Date, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
+weight_log$date <- format(weight_log$Date, format = "%m/%d/%y")
+
+```
+
+
+```{r}
+# INFORMATION ABOUT heart_rate
+
+head(heart_rate)
+
+glimpse(heart_rate)
+```
+```{r}
+## CHANGING THE DATA TYPE OF heart_rate
+
+heart_rate$Time=as.POSIXct(heart_rate$Time, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
+heart_rate$Date <- format(heart_rate$Time, format = "%m/%d/%y")
+
+```
+
+
+```{r}
+## INFORMATION ABOUT hourly_steps
+
+head(hourly_steps)
+
+glimpse(hourly_steps)
+```
+```{r}
+## CHANGING THE DATA TYPE OF hourly_steps
+
+hourly_steps$ActivityHour=as.POSIXct(hourly_steps$ActivityHour, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
+hourly_steps$ActivityHour <- format(hourly_steps$ActivityHour, format = "%m/%d/%y")
+
+```
+
+
+```{r}
+
+  
+
+```
+
+
+```{r}
+## INFORMATION ABOUT hourly_calories
+
+head(hourly_calories)
+
+glimpse(hourly_calories)
+```
+```{r}
+## CHANGING THE DATA TYPE OF hourly_calories
+
+hourly_calories$ActivityHour=as.POSIXct(hourly_calories$ActivityHour, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
+hourly_calories$DateTime <- format(hourly_calories$ActivityHour, format = "%m/%d/%y")
+
+```
+
+
+```{r}
+## INFORMATION ABOUT hourly_intensities
+
+head(hourly_intensities)
+
+glimpse(hourly_intensities)
+```
+
+```{r}
+## CHANGING THE DATA TYPE OF hourly_intensities
+
+hourly_intensities$ActivityHour=as.POSIXct(hourly_intensities$ActivityHour, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
+hourly_intensities$ActivityHour <- format(hourly_intensities$ActivityHour, format = "%m/%d/%y")
+
+
+```
+
+
+```{r}
+## MERGING THE DATASETS sleep_day & daily_activity
+
+merged_data <- merge(sleep_day, daily_activity, by = c('Id', 'date'))
+glimpse(merged_data)
+
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(data = daily_activity, aes(x = TotalSteps, y = Calories)) + geom_point() + geom_smooth() + labs(title = "Total Steps vs. Calories")
+```
+
+```{r}
+ggplot(data = sleep_day, aes(x = TotalMinutesAsleep, y = TotalTimeInBed)) + geom_point() + labs(title = "Total Time Asleep vs Total Time in Bed")
+```
+
+```{r}
+ggplot(data = merged_data, mapping = aes(x = SedentaryMinutes, y = TotalMinutesAsleep)) +
+  geom_point() + labs(title= "Sleep Duration and Sedentary Time")
+```
+
+```{r}
+## DETERMINING CORRELATION BETWEEN A USER'S TOTAL MINUTES ASLEEP & SEDENTARY MINUTES
+
+cor(merged_data$TotalMinutesAsleep,merged_data$SedentaryMinutes)
+```
+This means that the less active a participant is, the less sleep they tend to get...
+
+
+```{r}
+##AGGREGATING DATA BY A DAY OF WEEK TO SUMMARISE THEIR AVERAGES
+
+merged_data <- mutate(merged_data, day = wday(SleepDay, label = TRUE))
+summarized_sleep_activity <- merged_data %>% 
+  group_by(day) %>% 
+  summarise(AvgDailySteps = mean(TotalSteps),
+            AvgAsleepMinutes = mean(TotalMinutesAsleep),
+            AvgAwakeTimeInBed = mean(TotalTimeInBed), 
+            AvgSedentaryMinutes = mean(SedentaryMinutes),
+            AvgLightlyActiveMinutes = mean(LightlyActiveMinutes),
+            AvgFairlyActiveMinutes = mean(FairlyActiveMinutes),
+            AvgVeryActiveMinutes = mean(VeryActiveMinutes), 
+            AvgCalories = mean(Calories))
+head(summarized_sleep_activity) 
+```
+
+```{r}
+ggplot(data = summarized_sleep_activity, mapping = aes(x = day, y = AvgDailySteps)) +
+geom_col(fill = "skyblue") + labs(title = "Daily Step Count")
+```
+
+
+Looking at the given Tracker data, I have found some insights which are as follows:
+
+1. As we can see, on Sunday the number of steps are less. So, on weekends we can encourage the users to exercise by establishing a prompt feature or notification.
+
+2. We can make the fitness analysis report very user friendly and easy to understand. This will help their customers understand what they have achieved and how it is contributing to their overall body and health fitness.
+
+3. In order to improve the quality of the users' sleep, Bellabeat can consider using app notifications reminding users to get enough rest, as well as recommending to reduce their sedentary time.
+
+4. It is to be seen that a large percentage of people come in the 'least active' category. So, one thing Bellabeat can do is offer a progression system in the app to encourage participants to become at least fairly active.
+
+5. Users prefer to track their activities during weekdays as compared to weekends. However,they spend more time outside on weekdays such as Monday and Tuesday.
